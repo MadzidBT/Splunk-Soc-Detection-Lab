@@ -3,9 +3,9 @@
 | Field | Value |
 |---|---|
 | Case ID | LAB-SSH-001 |
-| Analyst | <YOUR_NAME> |
+| Analyst | Justin Marius |
 | Investigation date | 2026-10-15 |
-| Splunk version | <YOUR_SPLUNK_VERSION> |
+| Splunk version | 10.0.1 |
 | Index / time range | `splunk_learning`, All time |
 | Alert source | Searches `auth-02` and `auth-03` (card: [`brute-force-ssh.md`](../detections/brute-force-ssh.md)) |
 | Time convention | **UTC**, as displayed by my Splunk user. The log lines carry `+02:00`; converted times are given in brackets. |
