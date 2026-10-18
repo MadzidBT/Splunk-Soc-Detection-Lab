@@ -1,0 +1,7 @@
+index=splunk_learning sourcetype=linux_secure ("Failed password" OR "Accepted password")
+| rex field=_raw "from (?<src_ip>\d+\.\d+\.\d+\.\d+)"
+| eval result=if(match(_raw,"Failed password"),"fail","success")
+| transaction src_ip host startswith=eval(result="fail") endswith=eval(result="success") maxspan=30m
+| eval failures=eventcount-1 ```a transaction holds N failures + 1 success```
+| where failures>=10
+| table _time src_ip host failures duration

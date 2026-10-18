@@ -1,0 +1,4 @@
+index=splunk_learning sourcetype=winsec_csv (EventCode=4624 OR EventCode=4625)
+| eval outcome=if(EventCode=4624, "success", "failure")
+| eval series=outcome." (logon type ".Logon_Type.")"
+| timechart span=1d count BY series

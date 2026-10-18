@@ -1,0 +1,6 @@
+index=splunk_learning sourcetype=linux_secure "Failed password"
+| rex field=_raw "sshd\[\d+\]:\s+Failed\s+password\s+for\s+(?:invalid user\s+)?(?<user>\S+)\s+from\s+(?<src_ip>\d+\.\d+\.\d+\.\d+)"
+| where isnotnull(src_ip)
+| stats count AS failures dc(user) AS distinct_users min(_time) AS first_seen max(_time) AS last_seen BY src_ip host
+| convert ctime(first_seen) ctime(last_seen)
+| sort - failures

@@ -1,0 +1,4 @@
+index=splunk_learning sourcetype=access_combined
+| stats count AS requests dc(status) AS distinct_status count(eval(status>=400)) AS error_responses BY clientip
+| sort - requests
+| head 10

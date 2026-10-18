@@ -1,0 +1,8 @@
+index=splunk_learning sourcetype=access_combined status=404
+| rex field=_raw "\"(?<http_method>[A-Z]+)\s+(?<requested_uri>\S+)\s+HTTP/"
+| bin span=5m _time AS window_start
+| stats count AS not_found dc(requested_uri) AS distinct_uris values(http_method) AS methods values(useragent) AS user_agents min(_time) AS first_seen max(_time) AS last_seen BY clientip window_start
+| eval min_404=20, min_distinct_uris=10 ```THRESHOLDS per 5-minute window```
+| where not_found>=min_404 AND distinct_uris>=min_distinct_uris
+| convert ctime(window_start) ctime(first_seen) ctime(last_seen)
+| sort - not_found

@@ -1,0 +1,9 @@
+index=splunk_learning sourcetype=linux_secure ("Failed password" OR "Accepted password" OR "Accepted publickey")
+| rex field=_raw "sshd\[\d+\]:\s+(?<result>Failed|Accepted)\s+(?<auth_method>password|publickey)\s+for\s+(?:invalid user\s+)?(?<user>\S+)\s+from\s+(?<src_ip>\d+\.\d+\.\d+\.\d+)"
+| where isnotnull(src_ip)
+| sort 0 _time 
+| streamstats time_window=30m count(eval(result="Failed")) AS prior_failures BY src_ip host
+| eval min_failures=10 
+| where result="Accepted" AND prior_failures>=min_failures
+| eval external=if(cidrmatch("10.0.0.0/8", src_ip) OR cidrmatch("172.16.0.0/12", src_ip) OR cidrmatch("192.168.0.0/16", src_ip), "no", "yes")
+| table _time host src_ip external user auth_method prior_failures

@@ -1,0 +1,10 @@
+index=splunk_learning ((sourcetype=linux_secure "Failed password") OR sourcetype=firewall_csv)
+| rex field=_raw "Failed password for (?:invalid user\s+)?\S+ from (?<ssh_ip>\d+\.\d+\.\d+\.\d+)"
+| eval fw_src_internal=if(sourcetype="firewall_csv" AND (cidrmatch("10.0.0.0/8", src_ip) OR cidrmatch("172.16.0.0/12", src_ip) OR cidrmatch("192.168.0.0/16", src_ip)), 1, 0)
+| eval remote_ip=case(sourcetype="linux_secure", ssh_ip, fw_src_internal=1, dest_ip, true(), src_ip) ```remote end of the connection```
+| where isnotnull(remote_ip) AND NOT (cidrmatch("10.0.0.0/8", remote_ip) OR cidrmatch("172.16.0.0/12", remote_ip) OR cidrmatch("192.168.0.0/16", remote_ip))
+| stats count(eval(sourcetype="linux_secure")) AS ssh_failures count(eval(sourcetype="firewall_csv")) AS firewall_events count(eval(fw_src_internal=1)) AS outbound_from_internal count(eval(fw_src_internal=0 AND sourcetype="firewall_csv")) AS inbound_to_internal min(_time) AS first_seen max(_time) AS last_seen BY remote_ip
+| eval min_ssh_failures=10 
+| where ssh_failures>=min_ssh_failures AND firewall_events>=1
+| convert ctime(first_seen) ctime(last_seen)
+| sort - ssh_failures

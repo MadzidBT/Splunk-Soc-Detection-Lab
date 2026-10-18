@@ -1,0 +1,6 @@
+index=splunk_learning sourcetype=access_combined
+| stats count BY status
+| eventstats sum(count) AS total
+| eval percent=round(100*count/total, 1)
+| fields - total
+| sort - count

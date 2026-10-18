@@ -1,0 +1,19 @@
+index=splunk_learning sourcetype=dns_tsv
+| rex field=_raw "^(?<dns_ts>[^\t]+)\t(?<client_ip>[^\t]+)\t(?<resolver_ip>[^\t]+)\t(?<query>[^\t]+)\t(?<qtype>[^\t]+)\t(?<rcode>[^\t]+)\t(?<answers>.*)$"
+| where isnotnull(query)
+| eval base_domain=replace(lower(query), "^.*?([^.]+\.[^.]+)$", "\1") ```naive registered-domain: handles subdomains, not multi-label TLDs such as .co.uk```
+| lookup suspicious_domains.csv domain AS base_domain OUTPUT category
+| where isnotnull(category)
+| lookup asset_inventory.csv ip AS client_ip OUTPUT host AS asset_host
+| where isnotnull(asset_host)
+| stats count AS suspicious_queries count(eval(rcode="NOERROR")) AS resolved values(base_domain) AS domains values(category) AS categories min(_time) AS first_dns max(_time) AS last_dns BY asset_host client_ip
+| join type=inner asset_host
+    [ search index=splunk_learning sourcetype=linux_secure "Accepted password"
+      | rex field=_raw "Accepted password for \S+ from (?<ssh_ip>\d+\.\d+\.\d+\.\d+)"
+      | where isnotnull(ssh_ip) AND NOT (cidrmatch("10.0.0.0/8", ssh_ip) OR cidrmatch("172.16.0.0/12", ssh_ip) OR cidrmatch("192.168.0.0/16", ssh_ip))
+      | stats min(_time) AS first_external_ssh_success values(ssh_ip) AS ssh_source BY host
+      | rename host AS asset_host ]
+| where first_dns>=first_external_ssh_success
+| eval minutes_after_ssh_success=round((first_dns-first_external_ssh_success)/60, 1)
+| convert ctime(first_dns) ctime(last_dns) ctime(first_external_ssh_success)
+| table asset_host client_ip ssh_source first_external_ssh_success first_dns minutes_after_ssh_success suspicious_queries resolved domains categories

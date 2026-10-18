@@ -1,0 +1,2 @@
+index=splunk_learning sourcetype=firewall_csv
+| timechart span=1h count BY action

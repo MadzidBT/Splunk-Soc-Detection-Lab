@@ -1,0 +1,4 @@
+index=splunk_learning "203.0.113.50"
+| sort 0 _time
+| table _time sourcetype host source _raw
+| dedup sourcetype

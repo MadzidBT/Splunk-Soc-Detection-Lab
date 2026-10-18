@@ -1,0 +1,36 @@
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Never commit secrets or real data
+.env
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+credentials*
+secrets*
+*.token
+
+# Real or exported Splunk data (this repo only ships the synthetic dataset in data/raw/)
+*.csv.bak
+*.log.bak
+/real-logs/
+/exports/
+/splunk-backup/
+*.spl.bak
+
+# Scratch output of the generator when run with --out elsewhere
+/tmp/
+/out/

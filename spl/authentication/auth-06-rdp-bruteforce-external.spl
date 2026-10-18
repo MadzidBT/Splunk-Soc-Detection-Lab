@@ -1,0 +1,8 @@
+index=splunk_learning sourcetype=winsec_csv EventCode=4625 Logon_Type=10
+| where NOT (cidrmatch("10.0.0.0/8", src_ip) OR cidrmatch("172.16.0.0/12", src_ip) OR cidrmatch("192.168.0.0/16", src_ip))
+| bin span=10m _time AS window_start
+| stats count AS failures dc(Account_Name) AS distinct_accounts values(Account_Name) AS accounts_targeted min(_time) AS first_seen max(_time) AS last_seen BY src_ip ComputerName window_start
+| eval min_failures=10 ```THRESHOLD: failed RDP logons per external IP per 10 minutes```
+| where failures>=min_failures
+| convert ctime(window_start) ctime(first_seen) ctime(last_seen)
+| sort - failures

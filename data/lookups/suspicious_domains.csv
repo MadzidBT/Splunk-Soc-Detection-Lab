@@ -1,0 +1,5 @@
+domain,category
+malware.xyz,malware_distribution
+c2server.top,command_and_control
+phishing-bank.info,phishing
+evil-update.net,command_and_control

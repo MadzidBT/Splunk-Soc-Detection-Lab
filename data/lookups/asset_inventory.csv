@@ -1,0 +1,4 @@
+host,ip,role
+web01,192.168.1.15,Linux web server (SSH + Apache)
+WINDC01,192.168.1.10,Windows domain controller (RDP)
+dns01,10.0.0.2,Internal DNS resolver

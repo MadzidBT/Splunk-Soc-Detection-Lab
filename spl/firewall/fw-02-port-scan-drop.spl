@@ -1,0 +1,8 @@
+index=splunk_learning sourcetype=firewall_csv action=DROP
+| bin span=10m _time AS window_start
+| stats count AS drops dc(dest_port) AS distinct_ports dc(dest_ip) AS distinct_targets values(dest_ip) AS targets min(_time) AS first_seen max(_time) AS last_seen BY src_ip window_start
+| eval min_ports=20 ```THRESHOLD: distinct destination ports per source IP per 10 minutes```
+| where distinct_ports>=min_ports
+| eval scan_type=if(distinct_targets=1, "vertical (one host, many ports)", "horizontal/mixed")
+| convert ctime(window_start) ctime(first_seen) ctime(last_seen)
+| sort - distinct_ports

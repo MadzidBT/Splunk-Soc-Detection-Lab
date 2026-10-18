@@ -1,0 +1,7 @@
+# Keep the synthetic logs byte-for-byte as generated (LF). Git must not convert
+# line endings: that would change file hashes and the generator self-comparison.
+data/raw/* -text
+*.spl text eol=lf
+*.md text eol=lf
+*.py text eol=lf
+*.conf text eol=lf

@@ -1,0 +1,3 @@
+index=splunk_learning sourcetype=access_combined status>=500
+| stats count AS errors_5xx BY status host
+| sort - errors_5xx

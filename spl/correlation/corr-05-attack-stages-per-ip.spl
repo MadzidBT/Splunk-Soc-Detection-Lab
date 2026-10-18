@@ -1,0 +1,9 @@
+index=splunk_learning ((sourcetype=firewall_csv action=DROP) OR (sourcetype=access_combined status=404) OR (sourcetype=linux_secure ("Failed password" OR "Accepted password")) OR (sourcetype=winsec_csv (EventCode=4625 OR EventCode=4624)))
+| rex field=_raw "sshd\[\d+\]:\s+(?<ssh_result>Failed|Accepted)\s+password\s+for\s+(?:invalid user\s+)?\S+\s+from\s+(?<ssh_ip>\d+\.\d+\.\d+\.\d+)"
+| eval actor_ip=case(sourcetype="access_combined", clientip, sourcetype="linux_secure", ssh_ip, true(), src_ip)
+| where isnotnull(actor_ip) AND NOT (cidrmatch("10.0.0.0/8", actor_ip) OR cidrmatch("172.16.0.0/12", actor_ip) OR cidrmatch("192.168.0.0/16", actor_ip))
+| eval stage=case(sourcetype="firewall_csv", "1_port_scan", sourcetype="access_combined", "2_web_recon", sourcetype="linux_secure" AND ssh_result="Failed", "3_ssh_failures", sourcetype="winsec_csv" AND EventCode=4625, "3_windows_failures", sourcetype="linux_secure" AND ssh_result="Accepted", "4_ssh_success", sourcetype="winsec_csv" AND EventCode=4624, "4_windows_success")
+| stats count AS events dc(stage) AS stage_count values(stage) AS stages min(_time) AS first_seen max(_time) AS last_seen BY actor_ip
+| where stage_count>=2
+| convert ctime(first_seen) ctime(last_seen)
+| sort - stage_count - events

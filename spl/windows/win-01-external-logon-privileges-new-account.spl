@@ -1,0 +1,10 @@
+index=splunk_learning sourcetype=winsec_csv (EventCode=4624 OR EventCode=4672 OR EventCode=4720)
+| where NOT (cidrmatch("10.0.0.0/8", src_ip) OR cidrmatch("172.16.0.0/12", src_ip) OR cidrmatch("192.168.0.0/16", src_ip))
+| eval t_logon=if(EventCode=4624, _time, null()), t_priv=if(EventCode=4672, _time, null()), t_newacct=if(EventCode=4720, _time, null())
+| eval logon_account=if(EventCode=4624, Account_Name, null()), created_account=if(EventCode=4720, Account_Name, null())
+| stats min(t_logon) AS t_logon min(t_priv) AS t_priv min(t_newacct) AS t_newacct values(logon_account) AS logon_account values(created_account) AS created_account BY src_ip ComputerName
+| eval max_gap_s=3600 ```WINDOW: logon -> new account must happen within this many seconds```
+| where isnotnull(t_logon) AND isnotnull(t_priv) AND isnotnull(t_newacct) AND t_logon<=t_priv AND t_priv<=t_newacct AND (t_newacct-t_logon)<=max_gap_s
+| eval minutes_logon_to_new_account=round((t_newacct-t_logon)/60, 1)
+| convert ctime(t_logon) ctime(t_priv) ctime(t_newacct)
+| table src_ip ComputerName logon_account created_account t_logon t_priv t_newacct minutes_logon_to_new_account

@@ -1,0 +1,9 @@
+index=splunk_learning sourcetype=linux_secure ("Accepted password" OR "Accepted publickey" OR "sudo:")
+| rex field=_raw "Accepted\s+(?:password|publickey)\s+for\s+(?<ssh_user>\S+)\s+from\s+(?<ssh_ip>\d+\.\d+\.\d+\.\d+)"
+| rex field=_raw "sudo:\s+(?<sudo_user>\S+)\s+:.*COMMAND=(?<command>.+)$"
+| eval external_login_ip=if(isnotnull(ssh_ip) AND NOT (cidrmatch("10.0.0.0/8", ssh_ip) OR cidrmatch("172.16.0.0/12", ssh_ip) OR cidrmatch("192.168.0.0/16", ssh_ip)), ssh_ip, null())
+| sort 0 _time ```ascending order required by time_window```
+| streamstats time_window=5m latest(external_login_ip) AS recent_external_login_ip BY host
+| where isnotnull(command) AND isnotnull(recent_external_login_ip)
+| eval downloads_payload=if(match(command, "(?i)\b(curl|wget)\b"), "yes", "no")
+| table _time host sudo_user command recent_external_login_ip downloads_payload
